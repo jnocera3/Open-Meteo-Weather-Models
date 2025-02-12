@@ -5,6 +5,9 @@ import argparse
 import pandas as pd
 import numpy as np
 import shutil
+import git
+import os
+import glob
 import plotly.express as px
 from datetime import datetime, timezone, timedelta
 from retry_requests import retry
@@ -21,6 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-location","--location", required=False, default="Albany", help='Name of Location for outut purposes')
 parser.add_argument("-lat","--lat", required=False, default=42.6526, help='Latitude of location')
 parser.add_argument("-lon","--lon", required=False, default=-73.7562, help='Longitude of location')
+parser.add_argument("-git","--git", action='store_true', help='Enable git update')
 
 # Parse the input
 args = parser.parse_args()
@@ -194,3 +198,26 @@ template_file = "Template_forecast.html"
 out_file = location + "_forecast.html"
 shutil.copyfile(template_file, out_file)
 create_nav_file(out_file,"Template",location)
+
+if args.git:
+    print("Pushing " + location + " files to github")
+#   Define repo directory as current directory
+    repo_dir = os.getcwd()
+    file_list = glob.glob(location + "*")
+
+#   Set repo and pull
+    repo = git.Repo(repo_dir)
+    origin = repo.remote(name='origin')
+    existing_branch = repo.heads['master'] 
+    existing_branch.checkout() 
+    origin.pull()
+
+#   Add files to repo
+    repo.index.add(file_list) 
+
+#   Set commit message
+    repo.index.commit(location + ' Forecast Update') 
+
+#   Push files to github
+    origin.push() 
+    print('Files successfully pushed to github')
