@@ -97,6 +97,8 @@ for var in params["hourly"]:
         hourly["total_frozen_qpf"] = pd.DataFrame(data = hourly_data)
     elif var == "snowfall":
         hourly["total_snow"] = pd.DataFrame(data = hourly_data)
+        hourly["precip_type"] = pd.DataFrame(data = hourly_data)
+        hourly["precip_type"][["Snow","Rain","Ice","Model Count"]] = 0
     # Loop over models
     imodel=0
     for model in params["modelnames"]:
@@ -110,6 +112,14 @@ for var in params["hourly"]:
 #           hourly[var][model] = hourly["precipitation"][model] *  10 * mask
 #           hourly[var][model] = hourly["precipitation"][model] * (23.333312 - 0.416666 * hourly["temperature_2m"][model]) * mask
             hourly[var][model] = hourly["precipitation"][model] * (25.0 - 0.5 * hourly["temperature_2m"][model]) * mask
+            # Fill precip type dataframe
+            hourly["precip_type"]["Snow"] = hourly["precip_type"]["Snow"] + mask * 1.0
+            mask_precip = hourly["precipitation"][model] > 0.0
+            mask_temp = hourly["temperature_2m"][model] < 32.0
+            mask_model = hourly["precipitation"][model] > -10.0
+            hourly["precip_type"]["Ice"] = hourly["precip_type"]["Ice"] + (~mask * 1.0 * mask_temp * 1.0 * mask_precip * 1.0)
+            hourly["precip_type"]["Rain"] = hourly["precip_type"]["Rain"] + (~mask * 1.0 * ~mask_temp * 1.0 * mask_precip * 1.0)
+            hourly["precip_type"]["Model Count"] = hourly["precip_type"]["Model Count"] + mask_model * 1.0
         # Frozen precip is precip when temp is <=32 F
         elif var == "precipitation":
             mask = hourly["temperature_2m"][model] <= 32
@@ -193,12 +203,28 @@ for var in ["frozen_qpf", "total_qpf", "total_snow", "total_frozen_qpf"]:
     out_file = location + "_" + var + "_forecast.html"
     fig.write_html(out_file)
 
+# Compute precip type percent occurrence
+hourly["precip_type"] = hourly["precip_type"][hourly["precip_type"]['date/time (UTC)'] >= first_forecast_time]
+hourly["precip_type"][["Snow", "Rain", "Ice"]] = (hourly["precip_type"][["Snow", "Rain", "Ice"]].div(hourly["precip_type"]["Model Count"], axis=0) * 100.0).astype(float).round(1)
+hourly["precip_type"].drop("Model Count",axis=1,inplace=True)
+
+# Create precip type plot
+plot_title = 'Precip Type Probability Based on Model Output (%) Forecast for ' + location + "<br>Updated: " + str(current_time)
+fig = px.line(hourly["precip_type"], x='date/time (UTC)', y=hourly["precip_type"].columns, title=plot_title, markers=True, color_discrete_map={"Snow": "blue", "Rain": "green", "Ice": "purple"})
+fig.update_traces(mode="markers+lines", hovertemplate=None)
+fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Precip Type", hovermode="x unified", title_x=0.5)
+fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
+# Define name of output file
+out_file = location + "_precip_type_forecast.html"
+fig.write_html(out_file)
+
 # Create navigation file from template
 template_file = "Template_forecast.html"
 out_file = location + "_forecast.html"
 shutil.copyfile(template_file, out_file)
 create_nav_file(out_file,"Template",location)
 
+# Push images on github pages site
 if args.git:
     print("Pushing " + location + " files to github")
 #   Define repo directory as current directory
