@@ -3,6 +3,8 @@
 
 The python code here is open_meteo.py. It uses the Open Meteo Weather Forecast API to download model data for a point and create time-series plots. The other html files are examples of what the code creates.
 
+Forecast plots updating in real-time for Albany, NY can be found [here](https://jnocera3.github.io/Open-Meteo-Weather-Models/Albany_forecast.html)
+
 More info on the Open Meteo Weather Forecast API can be found [here](https://open-meteo.com/en/docs)
 
 ## Installation
