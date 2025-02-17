@@ -31,8 +31,8 @@ args = parser.parse_args()
 
 # Store the date as datetime object
 location = args.location
-lat = args.lat
-lon = args.lon
+lat = float(args.lat)
+lon = float(args.lon)
 
 # Make sure all required weather variables are listed here
 # The order of variables in hourly or daily is important to assign them correctly below
@@ -46,9 +46,15 @@ params = {
         "wind_speed_unit": "kn",
         "precipitation_unit": "inch",
         "timezone": "America/New_York",
-    "models": ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_hrrr", "gfs_graphcast025", "ncep_nbm_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
-    "modelnames": ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "Google-AI", "NBM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
 }
+
+# Set models to use based on lat/lon of extraction point
+if lat >= 24.0 and lat <= 50.0 and lon >= -125.0 and lon <= -62.0:
+    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_hrrr", "gfs_graphcast025", "ncep_nbm_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
+    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "Google-AI", "NBM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
+else:
+    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_graphcast025", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
+    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "Google-AI", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
 
 # Function to create html navigation file from Template
 def create_nav_file(navfile, old_string, new_string):
@@ -130,7 +136,10 @@ for var in params["hourly"]:
     # Remove past times from dataframe
     hourly[var] = hourly[var][hourly[var]['date/time (UTC)'] >= first_forecast_time]
     # Add ensemble mean
-    hourly[var]["Mean"] = hourly[var].drop("NBM",axis=1).mean(axis=1,numeric_only=True)
+    if 'NBM' in hourly[var].columns:
+        hourly[var]["Mean"] = hourly[var].drop("NBM",axis=1).mean(axis=1,numeric_only=True)
+    else:
+        hourly[var]["Mean"] = hourly[var].mean(axis=1,numeric_only=True)
     # Round decimal places depending on variable
     if var == "precipitation_probability" or var == "cloud_cover" or var == "wind_direction_10m":
         for model in params["modelnames"]:
@@ -146,7 +155,10 @@ for var in params["hourly"]:
         hourly[var]["Mean"] = hourly[var]["Mean"].round(2)
         # Set up frozen qpf dataframe
         hourly["frozen_qpf"] = hourly["frozen_qpf"][hourly["frozen_qpf"]['date/time (UTC)'] >= first_forecast_time]
-        hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].drop("NBM",axis=1).mean(axis=1,numeric_only=True)
+        if 'NBM' in hourly["frozen_qpf"].columns:
+            hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].drop("NBM",axis=1).mean(axis=1,numeric_only=True)
+        else: 
+            hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].mean(axis=1,numeric_only=True)
         for model in params["modelnames"]:
             hourly["frozen_qpf"][model] = hourly["frozen_qpf"][model].round(2)
         hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"]["Mean"].round(2)
@@ -156,7 +168,7 @@ for var in params["hourly"]:
     fig.update_traces(mode="markers+lines", hovertemplate=None)
     fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
     fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
-    fig['data'][11]['line']['width'] = 4
+    fig['data'][len(params["models"][0])]['line']['width'] = 4
     # Define name of output file
     out_file = location + "_" + var + "_forecast.html"
     fig.write_html(out_file)
@@ -198,7 +210,7 @@ for var in ["frozen_qpf", "total_qpf", "total_snow", "total_frozen_qpf"]:
     fig.update_traces(mode="markers+lines", hovertemplate=None)
     fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
     fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
-    fig['data'][11]['line']['width'] = 4
+    fig['data'][len(params["models"][0])]['line']['width'] = 4
     # Define name of output file
     out_file = location + "_" + var + "_forecast.html"
     fig.write_html(out_file)
