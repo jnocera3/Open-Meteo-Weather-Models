@@ -34,6 +34,9 @@ location = args.location
 lat = float(args.lat)
 lon = float(args.lon)
 
+# Define location for filename
+location_filename = location.replace(" ","_").replace(",","_").replace("__","_")
+
 # Make sure all required weather variables are listed here
 # The order of variables in hourly or daily is important to assign them correctly below
 url = "https://api.open-meteo.com/v1/forecast"
@@ -170,7 +173,7 @@ for var in params["hourly"]:
     fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
     fig['data'][len(params["models"][0])]['line']['width'] = 4
     # Define name of output file
-    out_file = location + "_" + var + "_forecast.html"
+    out_file = location_filename + "_" + var + "_forecast.html"
     fig.write_html(out_file)
     # Add cumulative snowfall dataframe
     if var == "snowfall":
@@ -212,7 +215,7 @@ for var in ["frozen_qpf", "total_qpf", "total_snow", "total_frozen_qpf"]:
     fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
     fig['data'][len(params["models"][0])]['line']['width'] = 4
     # Define name of output file
-    out_file = location + "_" + var + "_forecast.html"
+    out_file = location_filename + "_" + var + "_forecast.html"
     fig.write_html(out_file)
 
 # Compute precip type percent occurrence
@@ -227,21 +230,21 @@ fig.update_traces(mode="markers+lines", hovertemplate=None)
 fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Precip Type", hovermode="x unified", title_x=0.5)
 fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
 # Define name of output file
-out_file = location + "_precip_type_forecast.html"
+out_file = location_filename + "_precip_type_forecast.html"
 fig.write_html(out_file)
 
 # Create navigation file from template
 template_file = "Template_forecast.html"
-out_file = location + "_forecast.html"
+out_file = location_filename + "_forecast.html"
 shutil.copyfile(template_file, out_file)
-create_nav_file(out_file,"Template",location)
+create_nav_file(out_file,"Template",location_filename)
 
 # Push images on github pages site
 if args.git:
-    print("Pushing " + location + " files to github")
+    print("Pushing " + location_filename + " files to github")
 #   Define repo directory as current directory
     repo_dir = os.getcwd()
-    file_list = glob.glob(location + "*")
+    file_list = glob.glob(location_filename + "*")
 
 #   Set repo and pull
     repo = git.Repo(repo_dir)
@@ -254,7 +257,7 @@ if args.git:
     repo.index.add(file_list) 
 
 #   Set commit message
-    repo.index.commit(location + ' Forecast Update') 
+    repo.index.commit(location_filename + ' Forecast Update') 
 
 #   Push files to github
     origin.push() 
