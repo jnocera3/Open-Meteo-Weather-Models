@@ -170,7 +170,7 @@ for var in params["hourly"]:
     fig = px.line(hourly[var], x='date/time (UTC)', y=hourly[var].columns, title=plot_title, markers=True, color_discrete_map={"Mean": "black"})
     fig.update_traces(mode="markers+lines", hovertemplate=None)
     fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
-    fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
+    fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
     fig['data'][len(params["models"][0])]['line']['width'] = 4
     # Define name of output file
     out_file = location_filename + "_" + var + "_forecast.html"
@@ -212,7 +212,7 @@ for var in ["frozen_qpf", "total_qpf", "total_snow", "total_frozen_qpf"]:
     fig = px.line(hourly[var], x='date/time (UTC)', y=hourly[var].columns, title=plot_title, markers=True, color_discrete_map={"Mean": "black"})
     fig.update_traces(mode="markers+lines", hovertemplate=None)
     fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
-    fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
+    fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
     fig['data'][len(params["models"][0])]['line']['width'] = 4
     # Define name of output file
     out_file = location_filename + "_" + var + "_forecast.html"
@@ -228,7 +228,7 @@ plot_title = 'Precip Type Probability Based on Model Output (%) Forecast for ' +
 fig = px.line(hourly["precip_type"], x='date/time (UTC)', y=hourly["precip_type"].columns, title=plot_title, markers=True, color_discrete_map={"Snow": "blue", "Rain": "green", "Ice": "purple"})
 fig.update_traces(mode="markers+lines", hovertemplate=None)
 fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Precip Type", hovermode="x unified", title_x=0.5)
-fig.update_xaxes(dtick="H12", tickformat="%HZ\n%m-%d")
+fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
 # Define name of output file
 out_file = location_filename + "_precip_type_forecast.html"
 fig.write_html(out_file)
