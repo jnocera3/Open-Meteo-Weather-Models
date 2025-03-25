@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-location","--location", required=False, default="Albany", help='Name of Location for outut purposes')
 parser.add_argument("-lat","--lat", required=False, default=42.6526, help='Latitude of location')
 parser.add_argument("-lon","--lon", required=False, default=-73.7562, help='Longitude of location')
+parser.add_argument("-fcstday","--fcstday", required=False, default=7, help='Number of forecast days to grab. Default is 7.')
 parser.add_argument("-git","--git", action='store_true', help='Enable git update')
 
 # Parse the input
@@ -33,6 +34,7 @@ args = parser.parse_args()
 location = args.location
 lat = float(args.lat)
 lon = float(args.lon)
+fday = int(args.fcstday)
 
 # Define location for filename
 location_filename = location.replace(" ","_").replace(",","_").replace("__","_")
@@ -49,6 +51,7 @@ params = {
         "wind_speed_unit": "kn",
         "precipitation_unit": "inch",
         "timezone": "America/New_York",
+        "forecast_days": fday
 }
 
 # Set models to use based on lat/lon of extraction point
