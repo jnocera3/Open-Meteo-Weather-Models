@@ -56,8 +56,8 @@ params = {
 
 # Set models to use based on lat/lon of extraction point
 if lat >= 24.0 and lat <= 50.0 and lon >= -125.0 and lon <= -62.0:
-    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_hrrr", "gfs_graphcast025", "ncep_nbm_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
-    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "Google-AI", "NBM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
+    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_hrrr", "gfs_graphcast025", "ncep_nbm_conus", "ncep_nam_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
+    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "Google-AI", "NBM", "NAM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
 else:
     params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_graphcast025", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
     params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "Google-AI", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
