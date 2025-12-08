@@ -151,14 +151,18 @@ for var in params["hourly"]:
         for model in params["modelnames"]:
             hourly[var][model] = hourly[var][model].round(0)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(0)
-    elif var == "temperature_2m" or var == "dew_point_2m" or var == "snowfall" or var == "wind_speed_10m" or var == "pressure_msl":
+    elif var == "temperature_2m" or var == "dew_point_2m" or var == "wind_speed_10m" or var == "pressure_msl":
         for model in params["modelnames"]:
             hourly[var][model] = hourly[var][model].round(1)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(1)
-    elif var == "precipitation":
+    elif var == "snowfall":
         for model in params["modelnames"]:
             hourly[var][model] = hourly[var][model].round(2)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(2)
+    elif var == "precipitation":
+        for model in params["modelnames"]:
+            hourly[var][model] = hourly[var][model].round(3)
+        hourly[var]["Mean"] = hourly[var]["Mean"].round(3)
         # Set up frozen qpf dataframe
         hourly["frozen_qpf"] = hourly["frozen_qpf"][hourly["frozen_qpf"]['date/time (UTC)'] >= first_forecast_time]
         if 'NBM' in hourly["frozen_qpf"].columns:
@@ -166,8 +170,8 @@ for var in params["hourly"]:
         else: 
             hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].mean(axis=1,numeric_only=True)
         for model in params["modelnames"]:
-            hourly["frozen_qpf"][model] = hourly["frozen_qpf"][model].round(2)
-        hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"]["Mean"].round(2)
+            hourly["frozen_qpf"][model] = hourly["frozen_qpf"][model].round(3)
+        hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"]["Mean"].round(3)
     # Plot data
     plot_title = params["varnames"][ivar] + ' Forecast for ' + location + "<br>Updated: " + str(current_time)
     fig = px.line(hourly[var], x='date/time (UTC)', y=hourly[var].columns, title=plot_title, markers=True, color_discrete_map={"Mean": "black"})
@@ -183,22 +187,22 @@ for var in params["hourly"]:
         hourly["total_snow"] = hourly[var].drop("date/time (UTC)",axis=1).cumsum(axis=0)
         hourly["total_snow"]["date/time (UTC)"] = hourly[var]["date/time (UTC)"]
         for model in params["modelnames"]:
-            hourly["total_snow"][model] = hourly["total_snow"][model].round(1)
-        hourly["total_snow"]["Mean"] = hourly["total_snow"]["Mean"].round(1)
+            hourly["total_snow"][model] = hourly["total_snow"][model].round(2)
+        hourly["total_snow"]["Mean"] = hourly["total_snow"]["Mean"].round(2)
     # Add cumulative qpf and cumulative frozen qpf dataframe
     elif var == "precipitation":
         # Total QPF
         hourly["total_qpf"] = hourly[var].drop("date/time (UTC)",axis=1).cumsum(axis=0)
         hourly["total_qpf"]["date/time (UTC)"] = hourly[var]["date/time (UTC)"]
         for model in params["modelnames"]:
-            hourly["total_qpf"][model] = hourly["total_qpf"][model].round(2)
-        hourly["total_qpf"]["Mean"] = hourly["total_qpf"]["Mean"].round(2)
+            hourly["total_qpf"][model] = hourly["total_qpf"][model].round(3)
+        hourly["total_qpf"]["Mean"] = hourly["total_qpf"]["Mean"].round(3)
         # Total Frozen QPF
         hourly["total_frozen_qpf"] = hourly["frozen_qpf"].drop("date/time (UTC)",axis=1).cumsum(axis=0)
         hourly["total_frozen_qpf"]["date/time (UTC)"] = hourly["frozen_qpf"]["date/time (UTC)"]
         for model in params["modelnames"]:
-            hourly["total_frozen_qpf"][model] = hourly["total_frozen_qpf"][model].round(2)
-        hourly["total_frozen_qpf"]["Mean"] = hourly["total_frozen_qpf"]["Mean"].round(2)
+            hourly["total_frozen_qpf"][model] = hourly["total_frozen_qpf"][model].round(3)
+        hourly["total_frozen_qpf"]["Mean"] = hourly["total_frozen_qpf"]["Mean"].round(3)
     ivar+=1
 
 # Create additional plots for frozen qpf, cumulative snowfall, qpf and frozen qpf
