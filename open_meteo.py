@@ -121,9 +121,10 @@ for var in params["hourly"]:
         # For snowfall base ratio on temperature: 32 = 9/1, 20F = 15/1
         if var == "snowfall":
             mask = hourly[var][model] > 0
+            mask_temp = hourly["temperature_2m"][model] <= 40.0
 #           hourly[var][model] = hourly["precipitation"][model] *  10 * mask
 #           hourly[var][model] = hourly["precipitation"][model] * (23.333312 - 0.416666 * hourly["temperature_2m"][model]) * mask
-            hourly[var][model] = hourly["precipitation"][model] * (25.0 - 0.5 * hourly["temperature_2m"][model]) * mask
+            hourly[var][model] = hourly["precipitation"][model] * (25.0 - 0.5 * hourly["temperature_2m"][model]) * mask * mask_temp
             # Fill precip type dataframe
             hourly["precip_type"]["Snow"] = hourly["precip_type"]["Snow"] + mask * 1.0
             mask_precip = hourly["precipitation"][model] > 0.0
