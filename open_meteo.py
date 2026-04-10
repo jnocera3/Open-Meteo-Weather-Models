@@ -45,8 +45,8 @@ url = "https://api.open-meteo.com/v1/forecast"
 params = {
         "latitude": lat,
         "longitude": lon,
-        "hourly": ["temperature_2m", "dew_point_2m", "precipitation_probability", "precipitation", "snowfall", "pressure_msl", "cloud_cover", "wind_speed_10m", "wind_direction_10m"],
-        "varnames": ["2m Temp (deg F)", "2m Dewp (deg F)", "PoP (%)", "Hourly Precip (in)", "Hourly Snow (in)", "MSLP (mb)", "Cloud Cover (%)", "10m WSpd (kts)", "10m WDir (deg)"],
+        "hourly": ["temperature_2m", "dew_point_2m", "precipitation_probability", "precipitation", "snowfall", "pressure_msl", "cloud_cover", "wind_speed_10m", "wind_direction_10m", "cape"],
+        "varnames": ["2m Temp (deg F)", "2m Dewp (deg F)", "PoP (%)", "Hourly Precip (in)", "Hourly Snow (in)", "MSLP (mb)", "Cloud Cover (%)", "10m WSpd (kts)", "10m WDir (deg)", "CAPE (J/kg)"],
         "temperature_unit": "fahrenheit",
         "wind_speed_unit": "kn",
         "precipitation_unit": "inch",
@@ -172,16 +172,22 @@ for var in params["hourly"]:
         for model in params["modelnames"]:
             hourly["frozen_qpf"][model] = hourly["frozen_qpf"][model].round(3)
         hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"]["Mean"].round(3)
+    # Don't plot snowfall if all zeroes
+    if ((hourly[var].drop("date/time (UTC)",axis=1) < 0.01) | hourly[var].isna()).all(axis=None) and var == "snowfall":
+        plot_flag = False
+    else:
+        plot_flag = True
     # Plot data
-    plot_title = params["varnames"][ivar] + ' Forecast for ' + location + "<br>Updated: " + str(current_time)
-    fig = px.line(hourly[var], x='date/time (UTC)', y=hourly[var].columns, title=plot_title, markers=True, color_discrete_map={"Mean": "black"})
-    fig.update_traces(mode="markers+lines", hovertemplate=None)
-    fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
-    fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
-    fig['data'][len(params["models"][0])]['line']['width'] = 4
-    # Define name of output file
-    out_file = location_filename + "_" + var + "_forecast.html"
-    fig.write_html(out_file)
+    if plot_flag:
+        plot_title = params["varnames"][ivar] + ' Forecast for ' + location + "<br>Updated: " + str(current_time)
+        fig = px.line(hourly[var], x='date/time (UTC)', y=hourly[var].columns, title=plot_title, markers=True, color_discrete_map={"Mean": "black"})
+        fig.update_traces(mode="markers+lines", hovertemplate=None)
+        fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
+        fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
+        fig['data'][len(params["models"][0])]['line']['width'] = 4
+        # Define name of output file
+        out_file = location_filename + "_" + var + "_forecast.html"
+        fig.write_html(out_file)
     # Add cumulative snowfall dataframe
     if var == "snowfall":
         hourly["total_snow"] = hourly[var].drop("date/time (UTC)",axis=1).cumsum(axis=0)
@@ -189,6 +195,11 @@ for var in params["hourly"]:
         for model in params["modelnames"]:
             hourly["total_snow"][model] = hourly["total_snow"][model].round(2)
         hourly["total_snow"]["Mean"] = hourly["total_snow"]["Mean"].round(2)
+        # If snowfall is all zeroes, check if frozen QPF is also all zeroes
+        if ((hourly["frozen_qpf"].drop("date/time (UTC)",axis=1) < 0.01) | hourly["frozen_qpf"].isna()).all(axis=None) and not plot_flag:
+            extra_plot_flag = False
+        else:
+            extra_plot_flag = True
     # Add cumulative qpf and cumulative frozen qpf dataframe
     elif var == "precipitation":
         # Total QPF
@@ -205,8 +216,14 @@ for var in params["hourly"]:
         hourly["total_frozen_qpf"]["Mean"] = hourly["total_frozen_qpf"]["Mean"].round(3)
     ivar+=1
 
+# Set list of extra variables to plot
+if extra_plot_flag:
+    extra_vars = ["frozen_qpf", "total_qpf", "total_snow", "total_frozen_qpf"]
+else:
+    extra_vars = ["total_qpf"]
+
 # Create additional plots for frozen qpf, cumulative snowfall, qpf and frozen qpf
-for var in ["frozen_qpf", "total_qpf", "total_snow", "total_frozen_qpf"]:
+for var in extra_vars:
     # Plot data
     if var == "total_qpf":
         plot_title = 'Total Precip (in) Forecast for ' + location + "<br>Updated: " + str(current_time)
@@ -241,7 +258,10 @@ out_file = location_filename + "_precip_type_forecast.html"
 fig.write_html(out_file)
 
 # Create navigation file from template
-template_file = "Template_forecast.html"
+if extra_plot_flag:
+    template_file = "Template_forecast.html"
+else:
+    template_file = "Template_warmseason_forecast.html"
 out_file = location_filename + "_forecast.html"
 shutil.copyfile(template_file, out_file)
 create_nav_file(out_file,"Template",location_filename)
