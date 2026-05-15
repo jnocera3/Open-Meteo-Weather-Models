@@ -56,11 +56,11 @@ params = {
 
 # Set models to use based on lat/lon of extraction point
 if lat >= 24.0 and lat <= 50.0 and lon >= -125.0 and lon <= -62.0:
-    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_hrrr", "gfs_graphcast025", "ncep_nbm_conus", "ncep_nam_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
-    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "Google-AI", "NBM", "NAM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
+    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "gfs_hrrr", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "ncep_nbm_conus", "ncep_nam_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
+    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "AIGFS", "HGEFS", "NBM", "NAM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
 else:
-    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025", "gfs_global", "gfs_graphcast025", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
-    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "Google-AI", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
+    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
+    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "AIGFS", "HGEFS", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
 
 # Function to create html navigation file from Template
 def create_nav_file(navfile, old_string, new_string):
@@ -142,10 +142,7 @@ for var in params["hourly"]:
     # Remove past times from dataframe
     hourly[var] = hourly[var][hourly[var]['date/time (UTC)'] >= first_forecast_time]
     # Add ensemble mean
-    if 'NBM' in hourly[var].columns:
-        hourly[var]["Mean"] = hourly[var].drop("NBM",axis=1).mean(axis=1,numeric_only=True)
-    else:
-        hourly[var]["Mean"] = hourly[var].mean(axis=1,numeric_only=True)
+    hourly[var]["Mean"] = hourly[var].drop(labels=["NBM","HGEFS"],axis=1,errors='ignore').mean(axis=1,numeric_only=True)
     # Round decimal places depending on variable
     if var == "precipitation_probability" or var == "cloud_cover" or var == "wind_direction_10m":
         for model in params["modelnames"]:
@@ -165,10 +162,8 @@ for var in params["hourly"]:
         hourly[var]["Mean"] = hourly[var]["Mean"].round(3)
         # Set up frozen qpf dataframe
         hourly["frozen_qpf"] = hourly["frozen_qpf"][hourly["frozen_qpf"]['date/time (UTC)'] >= first_forecast_time]
-        if 'NBM' in hourly["frozen_qpf"].columns:
-            hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].drop("NBM",axis=1).mean(axis=1,numeric_only=True)
-        else: 
-            hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].mean(axis=1,numeric_only=True)
+        # Add ensemble mean
+        hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].drop(labels=["NBM","HGEFS"],axis=1,errors='ignore').mean(axis=1,numeric_only=True)
         for model in params["modelnames"]:
             hourly["frozen_qpf"][model] = hourly["frozen_qpf"][model].round(3)
         hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"]["Mean"].round(3)
