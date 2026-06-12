@@ -11,6 +11,7 @@ import glob
 import plotly.express as px
 from datetime import datetime, timezone, timedelta
 from retry_requests import retry
+import sys
 
 # Setup the Open-Meteo API client with cache and retry on error
 cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
@@ -51,16 +52,26 @@ params = {
         "wind_speed_unit": "kn",
         "precipitation_unit": "inch",
         "timezone": "America/New_York",
-        "forecast_days": fday
+        "forecast_days": fday,
+        "models": ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "gfs_hrrr", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "ncep_nbm_conus", "ncep_nam_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"]
 }
 
-# Set models to use based on lat/lon of extraction point
-if lat >= 24.0 and lat <= 50.0 and lon >= -125.0 and lon <= -62.0:
-    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "gfs_hrrr", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "ncep_nbm_conus", "ncep_nam_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
-    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "HRRR", "AIGFS", "HGEFS", "NBM", "NAM", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
-else:
-    params["models"] = ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"],
-    params["modelnames"] = ["ECMWF", "ECMWF-AI", "GFS", "AIGFS", "HGEFS", "JMA", "ICON", "GEM", "ARPEGE", "UKMET"]
+# Define dictionary mapping model number to model name
+model_dict = {
+        60: "ECMWF", 
+        86: "ECMWF-AI",
+         3: "GFS",
+         4: "HRRR",
+       113: "AIGFS",
+       115: "HGEFS", 
+        84: "NBM", 
+       104: "NAM", 
+        12: "JMA", 
+        20: "ICON", 
+        16: "GEM", 
+         7: "ARPEGE",
+        82: "UKMET"
+}
 
 # Function to create html navigation file from Template
 def create_nav_file(navfile, old_string, new_string):
@@ -91,6 +102,11 @@ hourly_data = {"date/time (UTC)": pd.date_range(
         inclusive = "left"
 )}
 
+# Get list of available models from responses
+modelnames = []
+for response in responses:
+    modelnames.append(model_dict[response.Model()])
+
 # Get first forecast time = current time rounded to next hour
 first_forecast_time = datetime.now(timezone.utc).replace(second=0, microsecond=0, minute=0) + timedelta(hours=1)
 
@@ -111,9 +127,9 @@ for var in params["hourly"]:
         hourly["total_snow"] = pd.DataFrame(data = hourly_data)
         hourly["precip_type"] = pd.DataFrame(data = hourly_data)
         hourly["precip_type"][["Snow","Rain","Ice","Model Count"]] = 0
-    # Loop over models
+    # Loop over available models
     imodel=0
-    for model in params["modelnames"]:
+    for model in modelnames:
         # Add data to dataframe
         model_data = pd.DataFrame()
         model_data[model] = responses[imodel].Hourly().Variables(ivar).ValuesAsNumpy()
@@ -145,26 +161,26 @@ for var in params["hourly"]:
     hourly[var]["Mean"] = hourly[var].drop(labels=["NBM","HGEFS"],axis=1,errors='ignore').mean(axis=1,numeric_only=True)
     # Round decimal places depending on variable
     if var == "precipitation_probability" or var == "cloud_cover" or var == "wind_direction_10m":
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly[var][model] = hourly[var][model].round(0)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(0)
     elif var == "temperature_2m" or var == "dew_point_2m" or var == "wind_speed_10m" or var == "pressure_msl":
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly[var][model] = hourly[var][model].round(1)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(1)
     elif var == "snowfall":
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly[var][model] = hourly[var][model].round(2)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(2)
     elif var == "precipitation":
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly[var][model] = hourly[var][model].round(3)
         hourly[var]["Mean"] = hourly[var]["Mean"].round(3)
         # Set up frozen qpf dataframe
         hourly["frozen_qpf"] = hourly["frozen_qpf"][hourly["frozen_qpf"]['date/time (UTC)'] >= first_forecast_time]
         # Add ensemble mean
         hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"].drop(labels=["NBM","HGEFS"],axis=1,errors='ignore').mean(axis=1,numeric_only=True)
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly["frozen_qpf"][model] = hourly["frozen_qpf"][model].round(3)
         hourly["frozen_qpf"]["Mean"] = hourly["frozen_qpf"]["Mean"].round(3)
     # Don't plot snowfall if all zeroes
@@ -179,7 +195,7 @@ for var in params["hourly"]:
         fig.update_traces(mode="markers+lines", hovertemplate=None)
         fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
         fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
-        fig['data'][len(params["models"][0])]['line']['width'] = 4
+        fig['data'][len(modelnames)]['line']['width'] = 4
         # Define name of output file
         out_file = location_filename + "_" + var + "_forecast.html"
         fig.write_html(out_file)
@@ -187,7 +203,7 @@ for var in params["hourly"]:
     if var == "snowfall":
         hourly["total_snow"] = hourly[var].drop("date/time (UTC)",axis=1).cumsum(axis=0)
         hourly["total_snow"]["date/time (UTC)"] = hourly[var]["date/time (UTC)"]
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly["total_snow"][model] = hourly["total_snow"][model].round(2)
         hourly["total_snow"]["Mean"] = hourly["total_snow"]["Mean"].round(2)
         # If snowfall is all zeroes, check if frozen QPF is also all zeroes
@@ -200,13 +216,13 @@ for var in params["hourly"]:
         # Total QPF
         hourly["total_qpf"] = hourly[var].drop("date/time (UTC)",axis=1).cumsum(axis=0)
         hourly["total_qpf"]["date/time (UTC)"] = hourly[var]["date/time (UTC)"]
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly["total_qpf"][model] = hourly["total_qpf"][model].round(3)
         hourly["total_qpf"]["Mean"] = hourly["total_qpf"]["Mean"].round(3)
         # Total Frozen QPF
         hourly["total_frozen_qpf"] = hourly["frozen_qpf"].drop("date/time (UTC)",axis=1).cumsum(axis=0)
         hourly["total_frozen_qpf"]["date/time (UTC)"] = hourly["frozen_qpf"]["date/time (UTC)"]
-        for model in params["modelnames"]:
+        for model in modelnames:
             hourly["total_frozen_qpf"][model] = hourly["total_frozen_qpf"][model].round(3)
         hourly["total_frozen_qpf"]["Mean"] = hourly["total_frozen_qpf"]["Mean"].round(3)
     ivar+=1
@@ -232,7 +248,7 @@ for var in extra_vars:
     fig.update_traces(mode="markers+lines", hovertemplate=None)
     fig.update_layout(xaxis_title="Time/Date (UTC)", yaxis_title=None, legend_title_text="Models", hovermode="x unified", title_x=0.5)
     fig.update_xaxes(dtick="H12", tickformat="%HZ-%a\n%m-%d")
-    fig['data'][len(params["models"][0])]['line']['width'] = 4
+    fig['data'][len(modelnames)]['line']['width'] = 4
     # Define name of output file
     out_file = location_filename + "_" + var + "_forecast.html"
     fig.write_html(out_file)
