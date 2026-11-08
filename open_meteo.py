@@ -53,7 +53,7 @@ params = {
         "precipitation_unit": "inch",
         "timezone": "America/New_York",
         "forecast_days": fday,
-        "models": ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "gfs_hrrr", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "ncep_nbm_conus", "ncep_nam_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"]
+        "models": ["ecmwf_ifs025", "ecmwf_aifs025_single", "gfs_global", "gfs_hrrr", "ncep_aigfs025", "ncep_hgefs025_ensemble_mean", "ncep_nbm_conus", "ncep_rrfs_conus", "jma_seamless", "icon_seamless", "gem_seamless", "meteofrance_arpege_world", "ukmo_seamless"]
 }
 
 # Define dictionary mapping model number to model name
@@ -65,7 +65,7 @@ model_dict = {
        113: "AIGFS",
        115: "HGEFS", 
         84: "NBM", 
-       104: "NAM", 
+       156: "RRFS", 
         12: "JMA", 
         20: "ICON", 
         16: "GEM", 
